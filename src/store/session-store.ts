@@ -1,10 +1,14 @@
 import { computed, signal } from '@preact/signals';
 import type { SiteContextSummary } from '../core/context-cache';
+import type { NoteItem } from '../core/markdown-engine';
 import type { StoredCredentials, TextSelectionPayload } from '../platform/bridge';
 
 export type PanelViewMode = 'closed' | 'definition' | 'translation' | 'notes' | 'chat';
 
 export const currentUrl = signal<string>('https://es.wikipedia.org/wiki/Arquitectura_hexagonal');
+export const currentPageTitle = signal<string>('Arquitectura hexagonal');
+export const cleanedBodyText = signal<string>('');
+export const sessionNotes = signal<NoteItem[]>([]);
 export const smartModeEnabled = signal<boolean>(false);
 export const isIncognito = signal<boolean>(false);
 

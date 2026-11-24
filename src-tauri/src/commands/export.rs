@@ -1,6 +1,8 @@
 use crate::error::AppError;
 use serde::{Deserialize, Serialize};
 use std::path::{Component, Path, PathBuf};
+use tauri::AppHandle;
+use tauri_plugin_dialog::DialogExt;
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -73,25 +75,47 @@ pub fn validate_export_path(target_path: &Path, allowed_root: &Path) -> Result<P
 }
 
 #[tauri::command]
-pub async fn export_markdown_file(options: ExportMarkdownOptions) -> Result<ExportResult, AppError> {
+pub async fn export_markdown_file(
+    app: AppHandle,
+    options: ExportMarkdownOptions,
+) -> Result<ExportResult, AppError> {
     let safe_filename = validate_export_filename(&options.filename)?;
 
-    // En la integración final con tauri-plugin-dialog, el usuario elige la ruta nativa.
-    // Como salvaguarda adicional, validamos contra el directorio sugerido o el directorio temporal de usuario.
-    let base_dir = match options.suggested_directory {
-        Some(ref dir) => PathBuf::from(dir),
-        None => std::env::temp_dir(),
+    let mut dialog = app
+        .dialog()
+        .file()
+        .set_file_name(&safe_filename)
+        .add_filter("Markdown", &["md"]);
+
+    if let Some(ref dir) = options.suggested_directory {
+        dialog = dialog.set_directory(dir);
+    }
+
+    let picked = dialog.blocking_save_file();
+
+    let Some(file_path) = picked else {
+        return Ok(ExportResult {
+            success: false,
+            file_path: None,
+        });
     };
 
-    let candidate = base_dir.join(&safe_filename);
-    let safe_path = validate_export_path(&candidate, &base_dir)?;
+    let resolved = file_path
+        .into_path()
+        .map_err(|e| AppError::InvalidPath(e.to_string()))?;
 
-    std::fs::write(&safe_path, options.content.as_bytes())?;
+    if let Some(parent) = resolved.parent() {
+        let safe_path = validate_export_path(&resolved, parent)?;
+        std::fs::write(&safe_path, options.content.as_bytes())?;
+        return Ok(ExportResult {
+            success: true,
+            file_path: Some(safe_path.to_string_lossy().to_string()),
+        });
+    }
 
-    Ok(ExportResult {
-        success: true,
-        file_path: Some(safe_path.to_string_lossy().to_string()),
-    })
+    Err(AppError::InvalidPath(String::from(
+        "Ruta de exportación sin directorio padre válido",
+    )))
 }
 
 #[cfg(test)]

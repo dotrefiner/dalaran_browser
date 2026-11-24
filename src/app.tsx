@@ -2,9 +2,11 @@ import { useEffect, useMemo } from 'preact/hooks';
 import { AdaptivePanel } from './components/AdaptivePanel';
 import { AuthToast } from './components/AuthToast';
 import { BrowserBar } from './components/BrowserBar';
+import { ContextualChat } from './components/ContextualChat';
 import { DefinitionView } from './components/DefinitionView';
 import { NoteEditorView } from './components/NoteEditorView';
 import { OnboardingModal } from './components/OnboardingModal';
+import { buildContextualPromptPayload, type ChatScope } from './core/chat-context';
 import { ContextCache } from './core/context-cache';
 import { MarkdownEngine, type ExportMode } from './core/markdown-engine';
 import { SessionPersistence } from './core/session-persistence';
@@ -64,6 +66,31 @@ export function App({ bridge: injectedBridge }: AppProps) {
       filename: 'notas-lectura.md',
       content,
     });
+  };
+
+  const handleChatMessage = async (
+    question: string,
+    scope: ChatScope,
+    onChunk: (partial: string) => void
+  ) => {
+    const apiKey = credentials.value.apiKey ?? credentials.value.accessToken;
+    if (!apiKey) {
+      throw new Error('Inicia sesión o configura una API Key para iniciar el debate contextual.');
+    }
+
+    const client = new GeminiClient({ apiKey });
+    const cached = contextCache.get(currentUrl.value) ?? activeContextSummary.value;
+    const contextPayload = buildContextualPromptPayload({
+      scope,
+      selectedText: activeSelection.value?.selectedText,
+      cleanedBodyText: cleanedBodyText.value,
+      siteSummary: cached,
+      notes: sessionNotes.value,
+    });
+
+    for await (const chunk of client.streamContextualChat(question, contextPayload)) {
+      onChunk(chunk);
+    }
   };
 
   useEffect(() => {
@@ -164,6 +191,9 @@ export function App({ bridge: injectedBridge }: AppProps) {
               }}
               onExportMarkdown={handleExportMarkdown}
             />
+          )}
+          {panelMode.value === 'chat' && (
+            <ContextualChat onSendMessage={handleChatMessage} />
           )}
         </AdaptivePanel>
       </main>

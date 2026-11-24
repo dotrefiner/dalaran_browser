@@ -1,1 +1,30 @@
-*.md
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build outputs
+dist/
+dist-ssr/
+*.local
+
+# Tauri & Rust
+src-tauri/target/
+src-tauri/WixTools/
+*.rs.bk
+
+# Environment & secrets
+.env
+.env.*
+!.env.example
+
+# Editor & OS
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# Testing & coverage
+coverage/
+playwright-report/
+test-results/

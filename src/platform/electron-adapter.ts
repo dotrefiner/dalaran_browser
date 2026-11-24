@@ -1,9 +1,14 @@
 import type {
+  BrowsingViewOptions,
+  ContentScriptCommand,
   ExportMarkdownOptions,
   IPlatformBridge,
+  OAuthLoginResult,
+  PageLoadedPayload,
   PlatformInfo,
   StoredCredentials,
   TextSelectionPayload,
+  ViewBounds,
 } from './bridge';
 
 /**
@@ -23,6 +28,14 @@ export class ElectronPlatformAdapter implements IPlatformBridge {
     return this.notImplemented('handleOAuthCallback');
   }
 
+  openExternalUrl(_url: string): Promise<void> {
+    return this.notImplemented('openExternalUrl');
+  }
+
+  onOAuthLoginResult(_callback: (result: OAuthLoginResult) => void): () => void {
+    return this.notImplemented('onOAuthLoginResult');
+  }
+
   saveApiKey(_apiKey: string): Promise<void> {
     return this.notImplemented('saveApiKey');
   }
@@ -35,8 +48,16 @@ export class ElectronPlatformAdapter implements IPlatformBridge {
     return this.notImplemented('clearCredentials');
   }
 
-  createBrowsingView(_containerId: string, _initialUrl: string): Promise<void> {
+  createBrowsingView(
+    _containerId: string,
+    _initialUrl: string,
+    _options?: BrowsingViewOptions
+  ): Promise<void> {
     return this.notImplemented('createBrowsingView');
+  }
+
+  setBrowsingViewBounds(_bounds: ViewBounds): Promise<void> {
+    return this.notImplemented('setBrowsingViewBounds');
   }
 
   navigateBrowsingView(_url: string): Promise<void> {
@@ -49,6 +70,14 @@ export class ElectronPlatformAdapter implements IPlatformBridge {
 
   onSelectionEvent(_callback: (payload: TextSelectionPayload) => void): () => void {
     return this.notImplemented('onSelectionEvent');
+  }
+
+  onPageLoaded(_callback: (payload: PageLoadedPayload) => void): () => void {
+    return this.notImplemented('onPageLoaded');
+  }
+
+  onContentScriptCommand(_callback: (command: ContentScriptCommand) => void): () => void {
+    return this.notImplemented('onContentScriptCommand');
   }
 
   saveMarkdownFileDialog(

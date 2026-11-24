@@ -1,11 +1,16 @@
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import type {
+  BrowsingViewOptions,
+  ContentScriptCommand,
   ExportMarkdownOptions,
   IPlatformBridge,
+  OAuthLoginResult,
+  PageLoadedPayload,
   PlatformInfo,
   StoredCredentials,
   TextSelectionPayload,
+  ViewBounds,
 } from './bridge';
 
 /**
@@ -21,6 +26,14 @@ export class TauriPlatformAdapter implements IPlatformBridge {
     return invoke<{ accessToken: string; userEmail: string }>('handle_oauth_callback', { code });
   }
 
+  async openExternalUrl(url: string): Promise<void> {
+    return invoke<void>('open_external_url', { url });
+  }
+
+  onOAuthLoginResult(callback: (result: OAuthLoginResult) => void): () => void {
+    return this.subscribe('oauth-login-result', callback);
+  }
+
   async saveApiKey(apiKey: string): Promise<void> {
     return invoke<void>('save_api_key', { apiKey });
   }
@@ -33,8 +46,16 @@ export class TauriPlatformAdapter implements IPlatformBridge {
     return invoke<void>('clear_credentials');
   }
 
-  async createBrowsingView(containerId: string, initialUrl: string): Promise<void> {
-    return invoke<void>('create_browsing_view', { containerId, initialUrl });
+  async createBrowsingView(
+    containerId: string,
+    initialUrl: string,
+    options?: BrowsingViewOptions
+  ): Promise<void> {
+    return invoke<void>('create_browsing_view', { containerId, initialUrl, options });
+  }
+
+  async setBrowsingViewBounds(bounds: ViewBounds): Promise<void> {
+    return invoke<void>('set_browsing_view_bounds', { bounds });
   }
 
   async navigateBrowsingView(url: string): Promise<void> {
@@ -45,11 +66,11 @@ export class TauriPlatformAdapter implements IPlatformBridge {
     return invoke<T>('execute_in_content_script', { scriptCode });
   }
 
-  onSelectionEvent(callback: (payload: TextSelectionPayload) => void): () => void {
+  private subscribe<T>(eventName: string, callback: (payload: T) => void): () => void {
     let unlistenFn: (() => void) | null = null;
     let disposed = false;
 
-    void listen<TextSelectionPayload>('webview-text-selection', (event) => {
+    void listen<T>(eventName, (event) => {
       callback(event.payload);
     }).then((unlisten) => {
       if (disposed) {
@@ -65,6 +86,20 @@ export class TauriPlatformAdapter implements IPlatformBridge {
         unlistenFn();
       }
     };
+  }
+
+  onSelectionEvent(callback: (payload: TextSelectionPayload) => void): () => void {
+    return this.subscribe('webview-text-selection', callback);
+  }
+
+  onPageLoaded(callback: (payload: PageLoadedPayload) => void): () => void {
+    return this.subscribe('webview-page-loaded', callback);
+  }
+
+  onContentScriptCommand(callback: (command: ContentScriptCommand) => void): () => void {
+    return this.subscribe<{ command: ContentScriptCommand }>('content-script-command', (payload) => {
+      callback(payload.command);
+    });
   }
 
   async saveMarkdownFileDialog(

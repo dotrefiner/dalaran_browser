@@ -1,6 +1,7 @@
-import { useRef } from 'preact/hooks';
+import { useEffect, useRef } from 'preact/hooks';
 import {
   currentUrl,
+  focusUrlBarRequest,
   isIncognito,
   isSensitivePaused,
   lastRedactedPiiCount,
@@ -20,6 +21,13 @@ export function BrowserBar({
   onOpenAuthModal,
 }: BrowserBarProps) {
   const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (focusUrlBarRequest.value > 0) {
+      inputRef.current?.focus();
+      inputRef.current?.select();
+    }
+  }, [focusUrlBarRequest.value]);
 
   const handleSubmit = (e: Event) => {
     e.preventDefault();

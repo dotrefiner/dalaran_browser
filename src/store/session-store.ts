@@ -39,6 +39,12 @@ export const panelOutputText = signal<string>('');
 export const isPanelLoading = signal<boolean>(false);
 export const panelError = signal<string | null>(null);
 
+// Error del flujo de autenticación (OAuth o BYOK), visible en el modal.
+export const authError = signal<string | null>(null);
+
+// Contador incremental para solicitar foco en la barra de URL desde el WebView hijo.
+export const focusUrlBarRequest = signal<number>(0);
+
 export function resetPagePrivacyState(): void {
   isSensitivePaused.value = false;
   sensitiveReason.value = null;

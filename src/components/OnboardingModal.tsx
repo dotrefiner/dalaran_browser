@@ -1,5 +1,5 @@
 import { useState } from 'preact/hooks';
-import { showOnboardingModal } from '../store/session-store';
+import { authError, showOnboardingModal } from '../store/session-store';
 
 export interface OnboardingModalProps {
   onGoogleLogin: () => void;
@@ -40,6 +40,7 @@ export function OnboardingModal({ onGoogleLogin, onSaveApiKey }: OnboardingModal
             Iniciar sesión con Google (OAuth 2.0)
           </button>
         </div>
+        {authError.value && <p class="error-text">{authError.value}</p>}
 
         <form class="byok-form" onSubmit={handleKeySubmit}>
           <label for="byok-input">O usar API Key propia (BYOK):</label>
